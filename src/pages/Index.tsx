@@ -91,6 +91,7 @@ function AuthScreen({ onAuth }: { onAuth: () => void }) {
 export default function Index() {
   const [authed, setAuthed] = useState(false);
   const [tab, setTab] = useState<Tab>("balance");
+  const [hideBalance, setHideBalance] = useState(false);
 
   if (!authed) return <AuthScreen onAuth={() => setAuthed(true)} />;
 
@@ -98,15 +99,21 @@ export default function Index() {
 
   const renderTab = () => {
     switch (tab) {
-      case "balance": return <BalanceTab onTabChange={(t) => setTab(t as Tab)} />;
+      case "balance": return <BalanceTab onTabChange={(t) => setTab(t as Tab)} hideBalance={hideBalance} />;
       case "send": return <SendTab />;
       case "receive": return <ReceiveTab />;
       case "portfolio": return <PortfolioTab />;
       case "history": return <HistoryTab />;
       case "swap": return <SwapTab />;
       case "staking": return <StakingTab />;
-      case "settings": return <SettingsTab />;
-      default: return <BalanceTab onTabChange={(t) => setTab(t as Tab)} />;
+      case "settings": return (
+        <SettingsTab
+          onLogout={() => { setAuthed(false); setTab("balance"); }}
+          hideBalance={hideBalance}
+          onToggleHideBalance={() => setHideBalance((v) => !v)}
+        />
+      );
+      default: return <BalanceTab onTabChange={(t) => setTab(t as Tab)} hideBalance={hideBalance} />;
     }
   };
 
@@ -130,13 +137,27 @@ export default function Index() {
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Hide balance toggle */}
+            <button
+              onClick={() => setHideBalance((v) => !v)}
+              className="w-9 h-9 rounded-xl flex items-center justify-center transition-all active:scale-90"
+              style={{
+                background: hideBalance ? "rgba(0,212,255,0.12)" : "rgba(255,255,255,0.05)",
+                border: `1px solid ${hideBalance ? "rgba(0,212,255,0.3)" : "rgba(255,255,255,0.08)"}`,
+              }}
+              title={hideBalance ? "Показать баланс" : "Скрыть баланс"}
+            >
+              <Icon name={hideBalance ? "EyeOff" : "Eye"} size={15} style={{ color: hideBalance ? "#00D4FF" : "rgba(255,255,255,0.45)" }} />
+            </button>
+            {/* Network */}
             <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full" style={{ background: "rgba(0,255,148,0.08)", border: "1px solid rgba(0,255,148,0.15)" }}>
               <div className="w-1.5 h-1.5 rounded-full animate-pulse-slow" style={{ background: "#00FF94" }} />
               <span className="text-xs font-semibold" style={{ color: "#00FF94" }}>TON</span>
             </div>
+            {/* Send */}
             <button
               onClick={() => setTab("send")}
-              className="w-9 h-9 rounded-xl flex items-center justify-center"
+              className="w-9 h-9 rounded-xl flex items-center justify-center active:scale-90 transition-all"
               style={{ background: "rgba(0,212,255,0.1)", border: "1px solid rgba(0,212,255,0.15)" }}
             >
               <Icon name="ArrowUpRight" size={16} style={{ color: "#00D4FF" }} />

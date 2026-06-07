@@ -2,19 +2,69 @@ import { useState } from "react";
 import Icon from "@/components/ui/icon";
 
 const pools = [
-  { name: "TON Whales", apy: "5.2%", tvl: "3.2M TON", min: "50 TON", color: "#00D4FF", badge: "Популярный" },
-  { name: "TON Nominators", apy: "4.8%", tvl: "1.8M TON", min: "10,001 TON", color: "#8B5CF6", badge: null },
-  { name: "Bemo Finance", apy: "6.1%", tvl: "800K TON", min: "1 TON", color: "#00FF94", badge: "Высокий APY" },
+  { name: "TON Whales", apy: 5.2, tvl: "3.2M TON", min: "50 TON", minNum: 50, color: "#00D4FF", badge: "Популярный" },
+  { name: "TON Nominators", apy: 4.8, tvl: "1.8M TON", min: "10,001 TON", minNum: 10001, color: "#8B5CF6", badge: null },
+  { name: "Bemo Finance", apy: 6.1, tvl: "800K TON", min: "1 TON", minNum: 1, color: "#00FF94", badge: "Высокий APY" },
 ];
+
+const BALANCE = 1284.50;
+
+interface StakePosition {
+  pool: string;
+  amount: string;
+  reward: string;
+  days: string;
+  color: string;
+}
 
 export default function StakingTab() {
   const [selected, setSelected] = useState(0);
   const [stakeAmount, setStakeAmount] = useState("");
   const [tab, setTab] = useState<"stake" | "my">("stake");
-
-  const myStakes = [
+  const [staking, setStaking] = useState(false);
+  const [positions, setPositions] = useState<StakePosition[]>([
     { pool: "TON Whales", amount: "100 TON", reward: "+0.52 TON", days: "14 дней", color: "#00D4FF" },
-  ];
+  ]);
+  const [claimedMap, setClaimedMap] = useState<Record<number, boolean>>({});
+  const [claimingMap, setClaimingMap] = useState<Record<number, boolean>>({});
+
+  const handleMax = () => setStakeAmount(String(BALANCE));
+
+  const handleStake = () => {
+    const num = parseFloat(stakeAmount);
+    if (!num || num < pools[selected].minNum) return;
+    setStaking(true);
+    setTimeout(() => {
+      setStaking(false);
+      const pool = pools[selected];
+      const newPos: StakePosition = {
+        pool: pool.name,
+        amount: `${num} TON`,
+        reward: `+${(num * pool.apy / 100 / 365).toFixed(4)} TON`,
+        days: "Только что",
+        color: pool.color,
+      };
+      setPositions((prev) => [newPos, ...prev]);
+      setStakeAmount("");
+      setTab("my");
+    }, 2000);
+  };
+
+  const handleClaim = (idx: number) => {
+    setClaimingMap((m) => ({ ...m, [idx]: true }));
+    setTimeout(() => {
+      setClaimingMap((m) => ({ ...m, [idx]: false }));
+      setClaimedMap((m) => ({ ...m, [idx]: true }));
+      setTimeout(() => setClaimedMap((m) => ({ ...m, [idx]: false })), 3000);
+    }, 1500);
+  };
+
+  const handleUnstake = (idx: number) => {
+    setPositions((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  const num = parseFloat(stakeAmount) || 0;
+  const canStake = num >= pools[selected].minNum;
 
   return (
     <div className="flex flex-col gap-5 animate-fade-in">
@@ -31,7 +81,7 @@ export default function StakingTab() {
                 : { color: "rgba(255,255,255,0.4)" }
               }
             >
-              {t === "stake" ? "Пулы" : "Мои позиции"}
+              {t === "stake" ? "Пулы" : `Мои позиции${positions.length > 0 ? ` (${positions.length})` : ""}`}
             </button>
           ))}
         </div>
@@ -45,7 +95,7 @@ export default function StakingTab() {
               <button
                 key={pool.name}
                 onClick={() => setSelected(i)}
-                className="w-full p-4 rounded-2xl text-left transition-all"
+                className="w-full p-4 rounded-2xl text-left transition-all active:scale-[0.98]"
                 style={{
                   background: selected === i ? `${pool.color}10` : "rgba(255,255,255,0.03)",
                   border: `1px solid ${selected === i ? `${pool.color}40` : "rgba(255,255,255,0.07)"}`,
@@ -53,7 +103,7 @@ export default function StakingTab() {
                 }}
               >
                 <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <div className="w-8 h-8 rounded-xl flex items-center justify-center text-xs font-black" style={{ background: `${pool.color}20`, color: pool.color }}>
                       {pool.name[0]}
                     </div>
@@ -64,12 +114,12 @@ export default function StakingTab() {
                       </span>
                     )}
                   </div>
-                  <div className="w-5 h-5 rounded-full flex items-center justify-center" style={{ border: `2px solid ${selected === i ? pool.color : "rgba(255,255,255,0.15)"}` }}>
+                  <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0" style={{ border: `2px solid ${selected === i ? pool.color : "rgba(255,255,255,0.15)"}` }}>
                     {selected === i && <div className="w-2.5 h-2.5 rounded-full" style={{ background: pool.color }} />}
                   </div>
                 </div>
                 <div className="grid grid-cols-3 gap-2">
-                  {[["APY", pool.apy, pool.color], ["TVL", pool.tvl, "rgba(255,255,255,0.5)"], ["Мин.", pool.min, "rgba(255,255,255,0.5)"]].map(([k, v, c]) => (
+                  {[["APY", `${pool.apy}%`, pool.color], ["TVL", pool.tvl, "rgba(255,255,255,0.5)"], ["Мин.", pool.min, "rgba(255,255,255,0.5)"]].map(([k, v, c]) => (
                     <div key={k}>
                       <div className="text-xs" style={{ color: "rgba(255,255,255,0.3)" }}>{k}</div>
                       <div className="text-sm font-bold font-mono-wallet" style={{ color: c }}>{v}</div>
@@ -84,7 +134,9 @@ export default function StakingTab() {
           <div className="p-4 rounded-2xl" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
             <div className="flex justify-between mb-2">
               <span className="text-xs font-medium" style={{ color: "rgba(255,255,255,0.4)" }}>Сумма стейкинга</span>
-              <span className="text-xs" style={{ color: "rgba(255,255,255,0.3)" }}>Доступно: 1,284.50 TON</span>
+              <span className="text-xs cursor-pointer" style={{ color: "rgba(255,255,255,0.3)" }} onClick={handleMax}>
+                Доступно: {BALANCE.toLocaleString()} TON
+              </span>
             </div>
             <div className="flex items-center gap-2">
               <input
@@ -95,36 +147,58 @@ export default function StakingTab() {
                 className="flex-1 bg-transparent text-xl font-bold font-mono-wallet outline-none text-white"
                 style={{ caretColor: "#00D4FF" }}
               />
-              <button className="px-3 py-1.5 rounded-lg text-xs font-bold" style={{ background: "rgba(0,212,255,0.12)", color: "#00D4FF" }}>МАКС</button>
+              <button
+                onClick={handleMax}
+                className="px-3 py-1.5 rounded-lg text-xs font-bold active:scale-90 transition-all"
+                style={{ background: "rgba(0,212,255,0.12)", color: "#00D4FF" }}
+              >
+                МАКС
+              </button>
             </div>
             {stakeAmount && (
               <div className="mt-3 pt-3 flex justify-between text-xs" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
                 <span style={{ color: "rgba(255,255,255,0.35)" }}>Ожидаемый доход в год</span>
                 <span className="font-semibold" style={{ color: "#00FF94" }}>
-                  ~{(parseFloat(stakeAmount) * parseFloat(pools[selected].apy) / 100).toFixed(2)} TON
+                  ~{(num * pools[selected].apy / 100).toFixed(2)} TON
                 </span>
+              </div>
+            )}
+            {stakeAmount && !canStake && (
+              <div className="mt-2 text-xs" style={{ color: "#FF6B6B" }}>
+                Минимальная сумма для этого пула: {pools[selected].min}
               </div>
             )}
           </div>
 
-          <button disabled={!stakeAmount} className="w-full py-4 rounded-xl font-bold text-sm btn-primary disabled:opacity-40">
-            Застейкать TON
+          <button
+            onClick={handleStake}
+            disabled={!stakeAmount || !canStake || staking}
+            className="w-full py-4 rounded-xl font-bold text-sm btn-primary disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 active:scale-[0.98] transition-all"
+          >
+            {staking ? (
+              <>
+                <div className="w-4 h-4 rounded-full border-2 border-current border-t-transparent animate-spin opacity-60" />
+                Отправляем...
+              </>
+            ) : `Застейкать ${stakeAmount || "0"} TON`}
           </button>
         </>
       ) : (
         <>
-          {myStakes.length > 0 ? (
+          {positions.length > 0 ? (
             <div className="flex flex-col gap-3">
-              {myStakes.map((s, i) => (
+              {positions.map((s, i) => (
                 <div key={i} className="p-4 rounded-2xl" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-xl flex items-center justify-center text-xs font-black" style={{ background: `${s.color}20`, color: s.color }}>{s.pool[0]}</div>
+                      <div className="w-8 h-8 rounded-xl flex items-center justify-center text-xs font-black" style={{ background: `${s.color}20`, color: s.color }}>
+                        {s.pool[0]}
+                      </div>
                       <span className="font-semibold text-sm text-white">{s.pool}</span>
                     </div>
                     <span className="text-xs px-2 py-1 rounded-full" style={{ background: "rgba(0,255,148,0.1)", color: "#00FF94", border: "1px solid rgba(0,255,148,0.2)" }}>Активен</span>
                   </div>
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-3 gap-2 mb-3">
                     {[["Сумма", s.amount, "#fff"], ["Доход", s.reward, "#00FF94"], ["Период", s.days, "rgba(255,255,255,0.5)"]].map(([k, v, c]) => (
                       <div key={k}>
                         <div className="text-xs mb-0.5" style={{ color: "rgba(255,255,255,0.3)" }}>{k}</div>
@@ -132,16 +206,48 @@ export default function StakingTab() {
                       </div>
                     ))}
                   </div>
-                  <button className="w-full mt-3 py-2.5 rounded-xl text-sm font-semibold btn-secondary">Забрать награды</button>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleClaim(i)}
+                      disabled={claimingMap[i] || claimedMap[i]}
+                      className="flex-1 py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-1.5 transition-all active:scale-95 disabled:opacity-70"
+                      style={claimedMap[i]
+                        ? { background: "rgba(0,255,148,0.12)", border: "1px solid rgba(0,255,148,0.25)", color: "#00FF94" }
+                        : { background: "rgba(0,212,255,0.1)", border: "1px solid rgba(0,212,255,0.2)", color: "#00D4FF" }
+                      }
+                    >
+                      {claimingMap[i] ? (
+                        <><div className="w-3 h-3 rounded-full border border-current border-t-transparent animate-spin" /> Получаем...</>
+                      ) : claimedMap[i] ? (
+                        <><Icon name="Check" size={13} /> Получено!</>
+                      ) : "Забрать награды"}
+                    </button>
+                    <button
+                      onClick={() => handleUnstake(i)}
+                      className="px-4 py-2.5 rounded-xl text-sm font-semibold transition-all active:scale-95"
+                      style={{ background: "rgba(255,107,107,0.08)", border: "1px solid rgba(255,107,107,0.15)", color: "#FF6B6B" }}
+                    >
+                      Вывести
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center py-16 gap-3">
+            <div className="flex flex-col items-center justify-center py-16 gap-4">
               <div className="w-16 h-16 rounded-2xl flex items-center justify-center" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
                 <Icon name="TrendingUp" size={28} style={{ color: "rgba(255,255,255,0.2)" }} />
               </div>
-              <span className="text-sm" style={{ color: "rgba(255,255,255,0.3)" }}>Нет активных позиций</span>
+              <div className="text-center">
+                <div className="text-sm font-medium text-white mb-1">Нет активных позиций</div>
+                <div className="text-xs" style={{ color: "rgba(255,255,255,0.3)" }}>Выберите пул и застейкайте TON</div>
+              </div>
+              <button
+                onClick={() => setTab("stake")}
+                className="px-6 py-2.5 rounded-xl text-sm font-semibold btn-primary"
+              >
+                Выбрать пул
+              </button>
             </div>
           )}
         </>
