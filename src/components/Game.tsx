@@ -445,9 +445,7 @@ export default function Game() {
       }
 
       ctx.save();
-      ctx.translate(-stateRef.current.camX, 0);
-
-      const s = stateRef.current;
+      ctx.translate(-s.camX, 0);
 
       // Platforms
       s.platforms.forEach(p => drawPlatform(ctx, p, p.h === 20));
