@@ -1,5 +1,6 @@
 import { useState } from "react";
 import Icon from "@/components/ui/icon";
+import Game from "@/components/Game";
 import BalanceTab from "@/components/wallet/BalanceTab";
 import SendTab from "@/components/wallet/SendTab";
 import ReceiveTab from "@/components/wallet/ReceiveTab";
@@ -92,8 +93,27 @@ export default function Index() {
   const [authed, setAuthed] = useState(false);
   const [tab, setTab] = useState<Tab>("balance");
   const [hideBalance, setHideBalance] = useState(false);
+  const [showGame, setShowGame] = useState(false);
 
   if (!authed) return <AuthScreen onAuth={() => setAuthed(true)} />;
+
+  if (showGame) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center px-4 py-6" style={{ background: "#0A0A0F" }}>
+        <div className="w-full max-w-xl">
+          <button
+            onClick={() => setShowGame(false)}
+            className="flex items-center gap-1.5 text-xs font-medium mb-4 active:scale-95 transition-all"
+            style={{ color: "rgba(255,255,255,0.4)" }}
+          >
+            <Icon name="ChevronLeft" size={14} />
+            Назад к кошельку
+          </button>
+          <Game />
+        </div>
+      </div>
+    );
+  }
 
   const isNested = tab === "send" || tab === "receive" || tab === "swap";
 
@@ -196,7 +216,7 @@ export default function Index() {
                 <button
                   key={item.id}
                   onClick={() => setTab(item.id)}
-                  className="flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-all"
+                  className="flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-all active:scale-90"
                   style={{
                     color: isActive ? "#00D4FF" : "rgba(255,255,255,0.3)",
                     background: isActive ? "rgba(0,212,255,0.08)" : "transparent",
@@ -207,6 +227,15 @@ export default function Index() {
                 </button>
               );
             })}
+            {/* Game button */}
+            <button
+              onClick={() => setShowGame(true)}
+              className="flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-all active:scale-90"
+              style={{ color: "rgba(255,215,0,0.7)", background: "transparent" }}
+            >
+              <span style={{ fontSize: 20, lineHeight: 1 }}>🎮</span>
+              <span className="text-[10px] font-semibold leading-none">Игра</span>
+            </button>
           </div>
         </nav>
       </div>
